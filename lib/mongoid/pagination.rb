@@ -1,28 +1,16 @@
+
 module Mongoid
-  module Pagination
-    def self.included(base)
-      base.extend ClassMethods
-    end
-
-    module ClassMethods
-      # Paginate the results
-      #
-      # @param [Hash] opts
-      # @option [Integer] :page (default: 1)
-      # @option [Integer] :limit (default: 25)
-      #
-      # @return [Mongoid::Criteria]
+  module Criterion
+    module Pagination
       def paginate(opts = {})
-        empty_args = arg_blank?(opts[:limit]) &&
-          arg_blank?(opts[:page]) &&
-          arg_blank?(opts[:offset])
-
-        return criteria if empty_args
+        return criteria if opts[:limit].blank? &&
+          opts[:page].blank? &&
+          opts[:offset].blank?
 
         limit = (opts[:limit] || 25).to_i
         page  = (opts[:page]  || 1).to_i
 
-        if arg_blank?(opts[:page])
+        if opts[:page].blank?
           offset = (opts[:offset] || 0)
         else
           if page > 1
@@ -42,16 +30,22 @@ module Mongoid
       def per_page(page_limit = 25)
         limit(page_limit.to_i)
       end
-
-      private
-      def arg_blank?(arg)
-        case arg
-        when String
-          arg !~ /[^[:space:]]/
-        else
-          arg.nil? || arg == false
-        end
-      end
     end
   end
+
+  class Criteria
+    include Criterion::Pagination
+  end
+
+  module Pagination
+    extend Origin::Forwardable
+    select_with :with_default_scope
+
+    delegate :paginate, :per_page, to: :with_default_scope
+  end
+
+  module Document
+    included { extend Mongoid::Pagination }
+  end
 end
+

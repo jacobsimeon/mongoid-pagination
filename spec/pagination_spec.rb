@@ -3,7 +3,6 @@ require 'spec_helper'
 describe Mongoid::Pagination do
   class Person
     include Mongoid::Document
-    include Mongoid::Pagination
   end
 
   describe ".paginate" do
